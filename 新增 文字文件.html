@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Map with CSV Data</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <button onclick="selectYesSelfPickup()">YES 可以外送</button> <!-- Add button -->
+    <button onclick="selectNoSelfPickup()">No 自取店家</button> <!-- Add button -->
+
+    <script>
+        var map = L.map('map').setView([25.033, 121.565], 12); // Set initial coordinates and zoom level
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var markers = []; // Store markers for later access
+        var noSelfPickupMarkers = []; // Store markers with selfPickup as "NO"
+        var yesSelfPickupMarkers = []; // Store markers with selfPickup as "YES"
+
+        // Load CSV data and add markers to the map
+        fetch('https://raw.githubusercontent.com/JAAAE/test/main/shops.csv')
+            .then(response => response.text())
+            .then(csvData => {
+                var csvLines = csvData.split('\n').slice(1); // Remove header line and split CSV data into lines
+                csvLines.forEach(line => {
+                    var fields = line.split(','); // Split each line into fields
+                    var storeName = fields[0];
+                    var address = fields[1];
+                    var phoneNumber = fields[2];
+                    var businessHours = fields[3];
+                    var selfPickup = fields[4];
+                    var xCoord = parseFloat(fields[5]); // Convert X coordinate to float
+                    var yCoord = parseFloat(fields[6]); // Convert Y coordinate to float
+
+                    // Check if coordinates are valid
+                    if (!isNaN(xCoord) && !isNaN(yCoord)) {
+                        // Create a marker and add it to the map
+                        var popupContent = '店名：<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(storeName) + '" target="_blank">' + storeName + '</a>' + '<br>地址：'+address+ '<br>電話： ' + phoneNumber + '<br>營業時間: ' + businessHours + '<br>外送: ' + selfPickup;
+                        var marker = L.marker([yCoord, xCoord])
+                            .bindPopup(popupContent)
+                            .addTo(map);
+                        markers.push(marker); // Add marker to the markers array
+
+                        // Check if selfPickup is "NO" and add to noSelfPickupMarkers array
+                        if (selfPickup.toUpperCase() === "NO") {
+                            noSelfPickupMarkers.push(marker);
+                        }
+                        // Check if selfPickup is "YES" and add to yesSelfPickupMarkers array
+                        if (selfPickup.toUpperCase() === "YES") {
+                            yesSelfPickupMarkers.push(marker);
+                        }
+                    } else {
+                        console.error('Invalid coordinates for:', storeName);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching CSV data:', error);
+            });
+
+        function selectYesSelfPickup() {
+            // Reset color of all markers
+            markers.forEach(marker => {
+                marker.setIcon(new L.Icon.Default());
+            });
+
+            // Select a random marker with selfPickup as "YES"
+            var randomIndex = Math.floor(Math.random() * yesSelfPickupMarkers.length);
+            var selectedMarker = yesSelfPickupMarkers[randomIndex];
+
+            // Change color of the selected marker
+            selectedMarker.setIcon(new L.Icon({
+                iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            }));
+
+            // Open popup of the selected marker
+            selectedMarker.openPopup();
+        }
+
+        function selectNoSelfPickup() {
+            // Reset color of all markers
+            markers.forEach(marker => {
+                marker.setIcon(new L.Icon.Default());
+            });
+
+            // Select a random marker with selfPickup as "NO"
+            var randomIndex = Math.floor(Math.random() * noSelfPickupMarkers.length);
+            var selectedMarker = noSelfPickupMarkers[randomIndex];
+
+            // Change color of the selected marker
+            selectedMarker.setIcon(new L.Icon({
+                iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            }));
+
+            // Open popup of the selected marker
+            selectedMarker.openPopup();
+        }
+    </script>
+</body>
+</html>
